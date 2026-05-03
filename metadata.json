@@ -1,0 +1,8 @@
+{
+  "name": "Zero-Delay Image Generator",
+  "description": "A high-performance, completely uncensored bulk image generator pushing images at 0.0s speed without delay.",
+  "requestFramePermissions": [
+    "clipboard-write"
+  ],
+  "majorCapabilities": []
+}

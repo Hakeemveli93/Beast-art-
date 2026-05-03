@@ -1,0 +1,331 @@
+<div class="h-[100dvh] w-full flex flex-col text-slate-800 font-sans overflow-hidden relative">
+  <div class="bg-cotton-splash-1"></div>
+  <div class="bg-cotton-splash-2"></div>
+  
+  <!-- Soap Bubbles Elements scattered around -->
+  <div class="bubble bubble-1"></div>
+  <div class="bubble bubble-2"></div>
+  <div class="bubble bubble-3"></div>
+  <div class="bubble bubble-4"></div>
+  
+  <main class="flex-1 flex flex-col overflow-y-auto no-scrollbar scroll-smooth relative z-10 w-full max-w-2xl mx-auto pt-10 sm:pt-14 pb-28 px-4 sm:pl-32">
+          
+      <!-- Logo & Title -->
+      <div class="flex flex-col items-center mb-8">
+        <svg xmlns="http://www.w3.org/2000/svg" class="text-white w-24 h-24 sm:w-28 sm:h-28 drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] mb-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2L8,6V10L10,12L12,10L14,12L16,10V6L12,2M5,8L4,10L6,12V16L8,18V14L10,12H14L16,14V18L18,16V12L20,10L19,8L17,10V14L14,11L12,13L10,11L7,14V10L5,8Z"/>
+        </svg>
+        <h1 class="text-4xl sm:text-5xl font-black tracking-tighter cotton-t-holo leading-none mt-2 text-center relative">
+          BeastArt
+        </h1>
+      </div>
+
+      @if (currentView() === 'home') {
+        <!-- Central Prompt Input -->
+        <div class="w-full bg-white/40 border border-white/60 rounded-full px-5 py-3.5 shadow-sm backdrop-blur-md flex items-center mb-6">
+          <mat-icon class="text-slate-500 mr-2 text-[22px]">search</mat-icon>
+          <input type="text" [value]="promptInput()" (input)="updateState(promptInput, $event)" placeholder="Tx Prompts!" class="w-full bg-transparent text-lg font-medium text-slate-700 placeholder-slate-500 focus:outline-none min-w-0" (keyup.enter)="generateImage()" />
+        </div>
+
+        <!-- Central Generate Button -->
+        <button (click)="generateImage()" [disabled]="isGenerating() || !promptInput()" class="h-12 px-14 sm:px-16 glow-button rounded-full font-bold text-base tracking-wide disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2 mb-8 mx-auto self-center">
+            @if (isGenerating()) {
+              <mat-icon class="animate-spin text-[18px]">sync</mat-icon>
+              <span>Generating...</span>
+            } @else {
+              <span>Generate</span>
+            }
+        </button>
+
+        <!-- Preview Grid on Home -->
+        <div class="w-full">
+          <div class="grid grid-cols-3 gap-3">
+            @for (img of images().slice(0, 6); track img.id) {
+                <div tabindex="0" role="button" class="relative w-full aspect-[4/5] rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:border-white/80 group cursor-zoom-in" (click)="viewImage(img)" (keydown.enter)="viewImage(img)">
+                  @if (img.error) {
+                      <div class="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-md text-red-500 flex-col gap-1 h-full z-10 text-center p-2">
+                          <mat-icon class="text-3xl mb-1">error_outline</mat-icon>
+                          <span class="text-[10px] font-bold uppercase tracking-widest text-slate-800">Failed to generate</span>
+                          <span class="text-[9px] text-slate-500">Please try again</span>
+                      </div>
+                  } @else if (!img.url) {
+                      <div class="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm text-cyan-600 flex-col h-full z-10">
+                          <mat-icon class="text-3xl animate-spin">refresh</mat-icon>
+                      </div>
+                  }
+                  @if (img.url) {
+                      <img [src]="img.url" alt="Gallery preview" class="absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-110" [class.opacity-0]="!img.loaded" (load)="img.loaded = true" (error)="onImageError(img)" crossorigin="anonymous"/>
+                  }
+                </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (currentView() === 'explore') {
+        <div class="space-y-6 w-full bg-white/20 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-lg mb-8">
+          <h2 class="text-xl font-black text-slate-800 uppercase tracking-widest text-center mb-1">Beast Art Uncensored</h2>
+          <h3 class="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center mb-6">Bulk Image Generator System</h3>
+          
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">filter_none</mat-icon> Bulk Generation Count</h3>
+            <select [value]="bulkCount().toString()" (change)="bulkCount.set(+$any($event.target).value)" class="w-full bg-white/40 border border-white/60 rounded-xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm cursor-pointer appearance-none">
+                 <option value="1" class="text-black bg-white">1 Image</option>
+                 <option value="2" class="text-black bg-white">2 Images</option>
+                 <option value="4" class="text-black bg-white">4 Images</option>
+                 <option value="8" class="text-black bg-white">8 Images (Bulk Run)</option>
+            </select>
+          </div>
+
+          <div>
+             <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">auto_fix_high</mat-icon> Real-Life Enhancements</h3>
+             <div class="flex flex-wrap gap-2">
+               <button (click)="naturalSkin.set(!naturalSkin())" class="px-4 py-2 rounded-full border shadow-sm transition-all text-[10px] font-bold uppercase tracking-widest" [class.border-cyan-400]="naturalSkin()" [class.bg-cyan-400/20]="naturalSkin()" [class.text-cyan-600]="naturalSkin()" [class.border-white/60]="!naturalSkin()" [class.bg-white/40]="!naturalSkin()" [class.text-slate-600]="!naturalSkin()">Natural Skin Fix</button>
+               <button (click)="upscale4K.set(!upscale4K())" class="px-4 py-2 rounded-full border shadow-sm transition-all text-[10px] font-bold uppercase tracking-widest" [class.border-purple-400]="upscale4K()" [class.bg-purple-400/20]="upscale4K()" [class.text-purple-600]="upscale4K()" [class.border-white/60]="!upscale4K()" [class.bg-white/40]="!upscale4K()" [class.text-slate-600]="!upscale4K()">4K Max Upscale</button>
+             </div>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">brush</mat-icon> Negative Prompt</h3>
+            <input type="text" [value]="negativePrompt()" (input)="updateState(negativePrompt, $event)" placeholder="e.g. ugly, explicit, watermark..." class="w-full bg-white/40 border border-white/60 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm" />
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">photo_library</mat-icon> Img2Img Reference</h3>
+            <input type="text" [value]="referenceImage()" (input)="updateState(referenceImage, $event)" placeholder="https://... (Image URL)" class="w-full bg-white/40 border border-white/60 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm" />
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">memory</mat-icon> AI Engine Model</h3>
+            <select [value]="baseModel()" (change)="updateState(baseModel, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm cursor-pointer appearance-none">
+                @for (cat of MODEL_CATEGORIES; track cat.name) {
+                  <optgroup [label]="cat.name" class="font-bold text-slate-400 uppercase text-[10px]">
+                    @for (m of cat.models; track m) {
+                      <option [value]="m" class="font-medium text-slate-800 bg-white normal-case text-sm">{{m}}</option>
+                    }
+                  </optgroup>
+                }
+            </select>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">palette</mat-icon> Art Style Settings</h3>
+            <select [value]="artStyle()" (change)="updateState(artStyle, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm cursor-pointer appearance-none">
+                <option value="" class="font-medium text-slate-800 bg-white normal-case text-sm">None (Raw Output)</option>
+                @for (cat of STYLE_CATEGORIES; track cat.name) {
+                  <optgroup [label]="cat.name" class="font-bold text-slate-400 uppercase text-[10px]">
+                    @for (s of cat.styles; track s) {
+                      <option [value]="s" class="font-medium text-slate-800 bg-white normal-case text-sm">{{s}}</option>
+                    }
+                  </optgroup>
+                }
+            </select>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">view_quilt</mat-icon> Aspect Ratio</h3>
+            <select [value]="shapeRatio()" (change)="updateState(shapeRatio, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-cyan-400 transition-colors shadow-sm cursor-pointer appearance-none">
+                @for (ratio of AVAILABLE_SHAPERATIOS; track ratio) {
+                  <option [value]="ratio" class="font-medium text-slate-800 bg-white normal-case text-sm">{{ratio}}</option>
+                }
+            </select>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">movie_filter</mat-icon> Cinematic Enhancers</h3>
+            <div class="flex flex-wrap gap-2">
+               @for (enhancer of AVAILABLE_CINEMATIC_ENHANCERS; track enhancer) {
+                 <button (click)="toggleCinematicEnhancer(enhancer)" class="px-4 py-2 rounded-full border shadow-sm transition-all text-[10px] font-bold uppercase tracking-widest" [class.border-blue-400]="selectedCinematicEnhancers().includes(enhancer)" [class.bg-blue-400/20]="selectedCinematicEnhancers().includes(enhancer)" [class.text-blue-600]="selectedCinematicEnhancers().includes(enhancer)" [class.border-white/60]="!selectedCinematicEnhancers().includes(enhancer)" [class.bg-white/40]="!selectedCinematicEnhancers().includes(enhancer)" [class.text-slate-600]="!selectedCinematicEnhancers().includes(enhancer)">{{enhancer}}</button>
+               }
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-2 flex items-center gap-2"><mat-icon class="text-sm">api</mat-icon> Explore Features & Court Tools</h3>
+            <div class="flex flex-wrap gap-2">
+               @for (feature of AVAILABLE_EXPLORE_FEATURES; track feature) {
+                 <button (click)="toggleExploreFeature(feature)" class="px-4 py-2 rounded-full border shadow-sm transition-all text-[10px] font-bold uppercase tracking-widest" [class.border-orange-400]="selectedExploreFeatures().includes(feature)" [class.bg-orange-400/20]="selectedExploreFeatures().includes(feature)" [class.text-orange-600]="selectedExploreFeatures().includes(feature)" [class.border-white/60]="!selectedExploreFeatures().includes(feature)" [class.bg-white/40]="!selectedExploreFeatures().includes(feature)" [class.text-slate-600]="!selectedExploreFeatures().includes(feature)">{{feature}}</button>
+               }
+            </div>
+            <p class="text-[10px] text-slate-400 mt-3 font-semibold">* 100% freebies unlimited access zero no paywall on open/close source flux ai image generator</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1.5 flex items-center gap-2"><mat-icon class="text-xs">category</mat-icon> Genre</h3>
+                <select [value]="genre()" (change)="updateState(genre, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-400 shadow-sm transition-colors cursor-pointer appearance-none">
+                   @for (g of AVAILABLE_GENRES; track g) {
+                     <option [value]="g" class="text-black bg-white">{{g}}</option>
+                   }
+                </select>
+            </div>
+            <div>
+                <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1.5 flex items-center gap-2"><mat-icon class="text-xs">mood</mat-icon> Mood</h3>
+                <select [value]="mood()" (change)="updateState(mood, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-400 shadow-sm transition-colors cursor-pointer appearance-none">
+                   @for (m of AVAILABLE_MOODS; track m) {
+                     <option [value]="m" class="text-black bg-white">{{m}}</option>
+                   }
+                </select>
+            </div>
+            <div>
+                <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1.5 flex items-center gap-2"><mat-icon class="text-xs">style</mat-icon> Theme</h3>
+                <select [value]="theme()" (change)="updateState(theme, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-400 shadow-sm transition-colors cursor-pointer appearance-none">
+                   @for (t of AVAILABLE_THEMES; track t) {
+                     <option [value]="t" class="text-black bg-white">{{t}}</option>
+                   }
+                </select>
+            </div>
+            <div>
+                <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1.5 flex items-center gap-2"><mat-icon class="text-xs">flare</mat-icon> Effect</h3>
+                <select [value]="effect()" (change)="updateState(effect, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-400 shadow-sm transition-colors cursor-pointer appearance-none">
+                   @for (e of AVAILABLE_EFFECTS; track e) {
+                     <option [value]="e" class="text-black bg-white">{{e}}</option>
+                   }
+                </select>
+            </div>
+            <div class="col-span-2">
+                <h3 class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1.5 flex items-center gap-2"><mat-icon class="text-xs">tune</mat-icon> Style Details</h3>
+                <select [value]="styleDetails()" (change)="updateState(styleDetails, $event)" class="w-full bg-white/40 border border-white/60 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-cyan-400 shadow-sm transition-colors cursor-pointer appearance-none">
+                   @for (sd of AVAILABLE_STYLE_DETAILS; track sd) {
+                     <option [value]="sd" class="text-black bg-white">{{sd}}</option>
+                   }
+                </select>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (currentView() === 'gallery') {
+        <div class="w-full flex-1">
+          <h2 class="text-2xl font-black text-slate-800 uppercase tracking-widest mb-6 text-center">Gallery</h2>
+          @if (images().length === 0) {
+            <div class="text-center text-slate-500 font-bold py-12">No generations yet.</div>
+          }
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            @for (img of images(); track img.id) {
+                <div tabindex="0" role="button" class="relative w-full aspect-[4/5] rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/40 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:border-white/80 group cursor-zoom-in" (click)="viewImage(img)" (keydown.enter)="viewImage(img)">
+                  @if (img.error) {
+                      <div class="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-md text-red-500 flex-col gap-1 h-full z-10 text-center p-2">
+                          <mat-icon class="text-3xl mb-1">error_outline</mat-icon>
+                          <span class="text-[10px] font-bold uppercase tracking-widest text-slate-800">Failed to generate</span>
+                          <span class="text-[9px] text-slate-500">Please try again</span>
+                      </div>
+                  } @else if (!img.url) {
+                      <div class="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm text-purple-600 flex-col h-full z-10">
+                          <mat-icon class="text-3xl animate-spin">refresh</mat-icon>
+                      </div>
+                  }
+                  @if (img.url) {
+                      <img [src]="img.url" alt="Gallery image" class="absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-110" [class.opacity-0]="!img.loaded" (load)="img.loaded = true" (error)="onImageError(img)" crossorigin="anonymous"/>
+                  }
+                  
+                  <!-- Overlay for prompt & actions -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-3">
+                     <p class="text-[10px] text-white font-medium leading-tight drop-shadow-md line-clamp-3 italic">{{img.prompt}}</p>
+                  </div>
+                </div>
+            }
+          </div>
+        </div>
+      }
+  </main>
+
+  <!-- Navigation Sidebar / Bottom Bar -->
+  <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 sm:translate-x-0 w-[90%] max-w-sm sm:w-20 sm:h-[90dvh] sm:left-4 sm:top-1/2 sm:-translate-y-1/2 flex sm:flex-col items-center justify-between sm:justify-center sm:gap-6 glass-panel rounded-full sm:rounded-[2rem] p-2 sm:py-6 z-40 border border-white/60">
+    <!-- Home Tab -->
+    <button (click)="currentView.set('home')" class="flex flex-col items-center justify-center w-12 h-12 transition-colors relative" [class.text-cyan-700]="currentView() === 'home'" [class.text-slate-500]="currentView() !== 'home'">
+       <mat-icon class="text-2xl drop-shadow-sm">home</mat-icon>
+       <span class="text-[8px] font-bold mt-1">Home</span>
+    </button>
+    <!-- Explore Tab -->
+    <button (click)="currentView.set('explore')" class="flex flex-col items-center justify-center w-12 h-12 transition-colors" [class.text-cyan-700]="currentView() === 'explore'" [class.text-slate-500]="currentView() !== 'explore'">
+       <mat-icon class="text-2xl drop-shadow-sm">grid_view</mat-icon>
+       <span class="text-[8px] font-bold mt-1">Explore</span>
+    </button>
+    
+    <!-- Central Create Tab -->
+    <button class="relative flex items-center justify-center mx-1 group" (click)="currentView.set('home'); promptInput() ? generateImage() : null">
+       <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-[#c4b5fd] to-[#67e8f9] flex items-center justify-center shadow-[0_0_20px_rgba(103,232,249,0.6)] border-2 border-white group-hover:scale-105 transition-transform relative z-10 bottom-3">
+          <mat-icon class="text-3xl text-white drop-shadow-md">auto_awesome</mat-icon>
+       </div>
+    </button>
+
+    <!-- Gallery Tab -->
+    <button (click)="currentView.set('gallery')" class="flex flex-col items-center justify-center w-12 h-12 transition-colors" [class.text-cyan-700]="currentView() === 'gallery'" [class.text-slate-500]="currentView() !== 'gallery'">
+       <mat-icon class="text-2xl drop-shadow-sm">face</mat-icon>
+       <span class="text-[8px] font-bold mt-1">Gallery</span>
+    </button>
+    
+    <!-- Profile Tab -->
+    <button class="flex flex-col items-center justify-center w-12 h-12 relative transition-colors" (click)="openProfile()" [class.text-cyan-700]="isProfileOpen()" [class.text-slate-500]="!isProfileOpen()">
+       <mat-icon class="text-2xl drop-shadow-sm">person</mat-icon>
+       <span class="text-[8px] font-bold mt-1">Account</span>
+       <!-- Red Dot Indicator -->
+       @if (!currentUser()) {
+         <div class="absolute top-1 right-2 w-2 h-2 rounded-full bg-red-500 border border-white hidden"></div>
+       }
+       <div class="absolute top-1 right-2 w-2.5 h-2.5 rounded-full bg-[#f43f5e] border-[1.5px] border-white"></div>
+    </button>
+  </nav>
+
+  <!-- Profile Modal -->
+  @if (isProfileOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-white/60 backdrop-blur-3xl">
+     <div class="glass-panel w-full max-w-lg rounded-[2rem] overflow-hidden shadow-2xl flex flex-col">
+        <div class="p-8 border-b border-white/50 flex items-center justify-between bg-white/20">
+           <h2 class="text-xl font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+              <mat-icon class="text-cyan-500">person</mat-icon> Profile Options
+           </h2>
+           <button class="p-2 hover:bg-white/40 rounded-full text-slate-500 transition-colors" (click)="closeProfile()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="p-8 bg-white/30">
+           <div class="bg-white/40 p-6 rounded-2xl border border-white/60 shadow-sm text-center mb-6">
+              <p class="text-5xl font-black text-slate-800 mb-2 tracking-tighter">{{images().length}}</p>
+              <p class="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Total Creations</p>
+           </div>
+
+           <div class="space-y-3 mb-6">
+              <button (click)="downloadGallery()" [disabled]="images().length === 0" class="w-full p-4 bg-white/50 border border-white/60 text-slate-800 hover:bg-white/80 hover:border-cyan-400 rounded-xl shadow-sm transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale">
+                 <mat-icon class="text-sm">download</mat-icon> Save Gallery
+              </button>
+              
+              <button (click)="clearHistory()" [disabled]="images().length === 0" class="w-full p-4 bg-white/50 border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-400 rounded-xl shadow-sm transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale">
+                 <mat-icon class="text-sm">delete_sweep</mat-icon> Clear History
+              </button>
+           </div>
+
+           <button (click)="logout()" class="w-full p-4 bg-white/50 border border-slate-200 text-slate-700 hover:bg-white/80 rounded-xl shadow-sm transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+              <mat-icon class="text-sm">logout</mat-icon> Disconnect Account
+           </button>
+           
+           @if (popupText()) {
+              <p class="mt-6 text-center text-xs font-mono text-cyan-600">{{popupText()}}</p>
+           }
+        </div>
+     </div>
+  </div>
+  }
+
+  <!-- Lightbox Viewer -->
+  @if (viewingImage()) {
+  <div tabindex="-1" class="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-3xl p-4 sm:p-12" (click)="closeViewer()" (keydown.escape)="closeViewer()">
+    <button class="absolute top-6 right-6 p-4 bg-white/50 shadow-sm text-slate-800 rounded-2xl hover:bg-white transition-colors z-[110] backdrop-blur" (click)="closeViewer()">
+       <mat-icon>close</mat-icon>
+    </button>
+    <div role="presentation" class="w-full h-full flex flex-col lg:flex-row max-w-screen-2xl gap-8 relative z-10" (click)="$event.stopPropagation()">
+       <!-- Image Area -->
+       <div class="flex-1 min-h-0 flex items-center justify-center bg-white/30 backdrop-blur-md rounded-[2rem] border border-white/50 shadow-2xl overflow-hidden relative">
+          <img [src]="viewingImage()?.url" alt="Fullscreen View of Beast Art" class="max-w-full max-h-full object-contain" crossorigin="anonymous" />
+          <div class="absolute bottom-6 w-full flex justify-center gap-4">
+             <button class="bg-white/70 hover:bg-white text-slate-800 py-3 px-8 rounded-full backdrop-blur-md transition-all border border-white/80 font-bold uppercase tracking-widest text-xs shadow-xl flex items-center gap-2" (click)="viewingImage() ? downloadImage(viewingImage()!) : null">
+               <mat-icon class="text-base">download</mat-icon> Download
+             </button>
+             <button class="bg-red-500/20 hover:bg-red-500 text-red-100 py-3 px-8 rounded-full backdrop-blur-md transition-all border border-red-500/50 font-bold uppercase tracking-widest text-xs shadow-xl flex items-center gap-2" (click)="viewingImage() ? deleteImage(viewingImage()!) : null; closeViewer()">
+               <mat-icon class="text-base">delete</mat-icon> Delete
+             </button>
+          </div>
+       </div>
+    </div>
+  </div>
+  }
+</div>

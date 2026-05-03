@@ -1,0 +1,16 @@
+{
+  "name": "BeastArt PWA",
+  "short_name": "BeastArt",
+  "description": "Bulk Uncensored Image Generator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4facfe",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
